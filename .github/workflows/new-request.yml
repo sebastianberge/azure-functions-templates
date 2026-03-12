@@ -1,0 +1,84 @@
+name: New Request
+
+on:
+    issues:
+        types: [opened, labeled]
+
+permissions:
+    contents: write
+    pull-requests: write
+
+jobs:
+    new_request:
+        if: contains(github.event.issue.labels.*.name, 'new-azure-function') || contains(github.event.issue.labels.*.name, 'new-azure-web-app')
+        runs-on: ubuntu-latest
+
+        steps:
+            - name: Checkout
+              uses: actions/checkout@v6
+
+            - name: Set up Python
+              uses: actions/setup-python@v6
+              with:
+                  python-version: "3.12"
+
+            - name: Choose Azure Function or Web App
+              id: generator
+              run: |
+                  has_function_label="${{ contains(github.event.issue.labels.*.name, 'new-azure-function') }}"
+                  has_web_app_label="${{ contains(github.event.issue.labels.*.name, 'new-azure-web-app') }}"
+
+                  if [[ "$has_function_label" == "true" && "$has_web_app_label" == "true" ]]; then
+                      echo "Issue cannot have both new-azure-function and new-azure-web-app labels." >&2
+                      exit 1
+                  fi
+
+                  if [[ "$has_function_label" == "true" ]]; then
+                      echo "script_path=scripts/createAzureFunction.py" >> "$GITHUB_OUTPUT"
+                      echo "request_type=Azure Function" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+
+                  if [[ "$has_web_app_label" == "true" ]]; then
+                      echo "script_path=scripts/createAzureWebApp.py" >> "$GITHUB_OUTPUT"
+                      echo "request_type=Azure Web App" >> "$GITHUB_OUTPUT"
+                      exit 0
+                  fi
+
+                  echo "Issue is missing a supported request label." >&2
+                  exit 1
+
+            - name: Create new branch and code
+              id: creating
+              run: |
+                  python "${{ steps.generator.outputs.script_path }}"
+              env:
+                  ISSUE_BODY: ${{ github.event.issue.body }}
+                  ISSUE_NUMBER: ${{ github.event.issue.number }}
+                  ISSUE_TITLE: ${{ github.event.issue.title }}
+
+            - name: Create Pull Request
+              uses: peter-evans/create-pull-request@v7
+              with:
+                  token: ${{ secrets.GITHUB_TOKEN }}
+                  commit-message: "chore: scaffold ${{ steps.generator.outputs.request_type }} ${{ steps.creating.outputs.azure_name }} from issue #${{ github.event.issue.number }}"
+                  branch: ${{ steps.creating.outputs.branch_name }}
+                  title: "New ${{ steps.generator.outputs.request_type }}: ${{ steps.creating.outputs.azure_name }}"
+                  body: |
+                      Created from issue #${{ github.event.issue.number }}.
+
+                      Type:
+                      - ${{ steps.generator.outputs.request_type }}
+
+                      Function / Web App Name:
+                      - `${{ steps.creating.outputs.azure_name }}`
+
+                      Språk:
+                      - `${{ steps.creating.outputs.language }}`
+
+                      Owner:
+                      - `${{ steps.creating.outputs.owner }}`
+
+                      Kilde-issue:
+                      - ${{ github.event.issue.html_url }}
+                  base: main

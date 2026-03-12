@@ -1,0 +1,42 @@
+name: New Azure Web App
+description: Opprett en ny modul med standard struktur
+title: "[new-module] "
+labels:
+- scaffold
+- new-azure-web-app
+body:
+- type: input
+  id: module_name
+  attributes:
+    label: Modulnavn
+    description: Bruk små bokstaver, bindestrek, f.eks. billing-api
+    placeholder: billing-api
+  validations:
+    required: true
+
+- type: dropdown
+  id: language
+  attributes:
+    label: Språk
+    options:
+    - python
+    - node
+    - dotnet
+  validations:
+    required: true
+
+- type: input
+  id: owner
+  attributes:
+    label: Eier/team
+    placeholder: platform-team
+  validations:
+    required: true
+
+- type: textarea
+  id: description
+  attributes:
+    label: Beskrivelse
+    placeholder: Kort beskrivelse av modulen
+  validations:
+    required: false

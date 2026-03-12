@@ -1,8 +1,9 @@
-name: Ny modul
+name: New Azure Function
 description: Opprett en ny modul med standard struktur
 title: "[new-module] "
 labels:
 - scaffold
+- new-azure-function
 body:
 - type: input
   id: module_name

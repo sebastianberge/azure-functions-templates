@@ -5,6 +5,16 @@ from pathlib import Path
 ISSUE_BODY = os.environ["ISSUE_BODY"]
 ISSUE_NUMBER = os.environ["ISSUE_NUMBER"]
 
+
+def set_github_output(name: str, value: str) -> None:
+    github_output = os.getenv("GITHUB_OUTPUT")
+    if not github_output:
+        return
+
+    with open(github_output, "a", encoding="utf-8") as output_file:
+        output_file.write(f"{name}={value}\n")
+
+
 def extract_field(label: str, body: str) -> str:
     """
     Parses GitHub issue form markdown sections like:
@@ -103,7 +113,11 @@ elif language == "dotnet":
 else:
     raise ValueError(f"Ukjent språk: {language}")
 
-branch_name = f"scaffold/issue-{ISSUE_NUMBER}-{module_name}"
+branch_name = f"new-request/issue-{ISSUE_NUMBER}-{module_name}"
 Path(".generated_branch_name").write_text(branch_name, encoding="utf-8")
+set_github_output("branch_name", branch_name)
+set_github_output("module_name", module_name)
+set_github_output("language", language)
+set_github_output("owner", owner)
 print(f"Generated scaffold for {module_name} in {module_dir}")
 print(f"Branch name: {branch_name}")
